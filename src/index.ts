@@ -22,7 +22,7 @@ const walletClient = createWalletClient({
 });
 
 app.get("/", (req, res) => {
-  res.send(process.env.AI_PRIVATE_KEY);
+  res.send("Hello World!");
 });
 
 app.get("/get-party-cases", async (req, res) => {
