@@ -7,7 +7,6 @@ import { readContract } from "viem/actions";
 import { sepolia } from "viem/chains";
 import { ESCROW_JUDGE_ADDRESS } from "./config/addresses.ts";
 import abi from "./config/abi/EscrowJudge.ts";
-import "./declarations.ts";
 
 const app = express();
 const port = process.env.PORT ?? "3000";
