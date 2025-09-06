@@ -1,5 +1,6 @@
 // index.ts
 import express from "express";
+import { createClient } from "redis";
 import { createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { readContract } from "viem/actions";
@@ -21,12 +22,22 @@ const walletClient = createWalletClient({
   account,
 });
 
+const redisClient = await createClient()
+  .on("error", (err) => console.log("Redis Client Error", err))
+  .connect();
+
 app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
 app.get("/get-party-cases", async (req, res) => {
   const address = req.query.address as string;
+  const cachedCase = await redisClient.get(address.toLowerCase());
+
+  if (cachedCase) {
+    console.log("Serving from cache");
+    return res.json(JSON.parse(cachedCase));
+  }
 
   const caseIds = await readContract(walletClient, {
     address: ESCROW_JUDGE_ADDRESS,
@@ -38,18 +49,41 @@ app.get("/get-party-cases", async (req, res) => {
   console.log({ caseIds });
 
   const cases = await Promise.all(
-    caseIds.map(
-      async (id) =>
-        await readContract(walletClient, {
-          address: ESCROW_JUDGE_ADDRESS,
-          abi,
-          functionName: "cases",
-          args: [id],
-        })
-    )
+    caseIds.map(async (id) => {
+      const caseDetails = await readContract(walletClient, {
+        address: ESCROW_JUDGE_ADDRESS,
+        abi,
+        functionName: "cases",
+        args: [id],
+      });
+
+      const caseEvidences = await readContract(walletClient, {
+        address: ESCROW_JUDGE_ADDRESS,
+        abi,
+        functionName: "getCaseEvidences",
+        args: [id],
+      });
+
+      return {
+        id: Number(id),
+        client: caseDetails[0],
+        provider: caseDetails[1],
+        token: caseDetails[2],
+        amount: Number(caseDetails[3]),
+        evidencesClient: caseEvidences[0],
+        evidencesProvider: caseEvidences[1],
+        justification: caseDetails[4],
+        deadline: Number(caseDetails[5]),
+        proposedAt: Number(caseDetails[6]),
+        status: caseDetails[7],
+        outcome: caseDetails[8],
+      };
+    })
   );
 
-  res.json(cases);
+  await redisClient.set(address.toLowerCase(), JSON.stringify(cases));
+
+  return res.json(cases);
 });
 
 app.post("/propose-decision", async (req, res) => {
@@ -61,7 +95,7 @@ app.post("/propose-decision", async (req, res) => {
     args: [BigInt(caseId), outcome, decision],
   });
 
-  res.status(200).json({ success: true });
+  return res.status(200).json({ success: true });
 });
 
 app.listen(port, () => {

@@ -101,7 +101,7 @@ const abi = [
       },
       {
         indexed: false,
-        internalType: "enum EscrowJudge.Outcome",
+        internalType: "enum CaseRegistry.Outcome",
         name: "outcome",
         type: "uint8",
       },
@@ -120,7 +120,7 @@ const abi = [
       },
       {
         indexed: false,
-        internalType: "enum EscrowJudge.Outcome",
+        internalType: "enum CaseRegistry.Outcome",
         name: "outcome",
         type: "uint8",
       },
@@ -193,12 +193,12 @@ const abi = [
         type: "uint64",
       },
       {
-        internalType: "enum EscrowJudge.Status",
+        internalType: "enum CaseRegistry.Status",
         name: "status",
         type: "uint8",
       },
       {
-        internalType: "enum EscrowJudge.Outcome",
+        internalType: "enum CaseRegistry.Outcome",
         name: "outcome",
         type: "uint8",
       },
@@ -243,6 +243,30 @@ const abi = [
     name: "finalize",
     outputs: [],
     stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "id",
+        type: "uint256",
+      },
+    ],
+    name: "getCaseEvidences",
+    outputs: [
+      {
+        internalType: "string[]",
+        name: "clientEvidences",
+        type: "string[]",
+      },
+      {
+        internalType: "string[]",
+        name: "providerEvidences",
+        type: "string[]",
+      },
+    ],
+    stateMutability: "view",
     type: "function",
   },
   {
@@ -314,7 +338,7 @@ const abi = [
         type: "uint256",
       },
       {
-        internalType: "enum EscrowJudge.Outcome",
+        internalType: "enum CaseRegistry.Outcome",
         name: "outcome",
         type: "uint8",
       },
