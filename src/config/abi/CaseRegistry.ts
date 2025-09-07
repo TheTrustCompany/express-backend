@@ -27,13 +27,13 @@ const abi = [
       {
         indexed: false,
         internalType: "address",
-        name: "client",
+        name: "claimant",
         type: "address",
       },
       {
         indexed: false,
         internalType: "address",
-        name: "provider",
+        name: "defendant",
         type: "address",
       },
       {
@@ -52,7 +52,7 @@ const abi = [
       {
         indexed: false,
         internalType: "uint256",
-        name: "id",
+        name: "caseId",
         type: "uint256",
       },
       {
@@ -71,7 +71,7 @@ const abi = [
       {
         indexed: false,
         internalType: "uint256",
-        name: "id",
+        name: "caseId",
         type: "uint256",
       },
       {
@@ -81,13 +81,30 @@ const abi = [
         type: "address",
       },
       {
+        components: [
+          {
+            internalType: "string",
+            name: "cid",
+            type: "string",
+          },
+          {
+            internalType: "uint256",
+            name: "policyId",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "createdAt",
+            type: "uint256",
+          },
+        ],
         indexed: false,
-        internalType: "string",
-        name: "cid",
-        type: "string",
+        internalType: "struct CaseRegistry.Evidence",
+        name: "evidence",
+        type: "tuple",
       },
     ],
-    name: "Evidence",
+    name: "EvidenceSubmitted",
     type: "event",
   },
   {
@@ -96,7 +113,7 @@ const abi = [
       {
         indexed: false,
         internalType: "uint256",
-        name: "id",
+        name: "caseId",
         type: "uint256",
       },
       {
@@ -115,7 +132,7 @@ const abi = [
       {
         indexed: false,
         internalType: "uint256",
-        name: "id",
+        name: "caseId",
         type: "uint256",
       },
       {
@@ -159,12 +176,12 @@ const abi = [
     outputs: [
       {
         internalType: "address",
-        name: "client",
+        name: "claimant",
         type: "address",
       },
       {
         internalType: "address",
-        name: "provider",
+        name: "defendant",
         type: "address",
       },
       {
@@ -176,6 +193,11 @@ const abi = [
         internalType: "uint256",
         name: "amount",
         type: "uint256",
+      },
+      {
+        internalType: "string",
+        name: "complaint",
+        type: "string",
       },
       {
         internalType: "string",
@@ -210,8 +232,35 @@ const abi = [
     inputs: [
       {
         internalType: "uint256",
-        name: "id",
+        name: "caseId",
         type: "uint256",
+      },
+      {
+        internalType: "string",
+        name: "reason",
+        type: "string",
+      },
+      {
+        components: [
+          {
+            internalType: "string",
+            name: "cid",
+            type: "string",
+          },
+          {
+            internalType: "uint256",
+            name: "policyId",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "createdAt",
+            type: "uint256",
+          },
+        ],
+        internalType: "struct CaseRegistry.Evidence[]",
+        name: "evidences",
+        type: "tuple[]",
       },
     ],
     name: "challenge",
@@ -235,8 +284,32 @@ const abi = [
   {
     inputs: [
       {
+        internalType: "string",
+        name: "name",
+        type: "string",
+      },
+      {
+        internalType: "string",
+        name: "description",
+        type: "string",
+      },
+    ],
+    name: "createPolicy",
+    outputs: [
+      {
         internalType: "uint256",
         name: "id",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "caseId",
         type: "uint256",
       },
     ],
@@ -253,17 +326,70 @@ const abi = [
         type: "uint256",
       },
     ],
-    name: "getCaseEvidences",
+    name: "getCaseChallengeHistory",
     outputs: [
       {
         internalType: "string[]",
-        name: "clientEvidences",
+        name: "",
         type: "string[]",
       },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
       {
-        internalType: "string[]",
-        name: "providerEvidences",
-        type: "string[]",
+        internalType: "uint256",
+        name: "id",
+        type: "uint256",
+      },
+    ],
+    name: "getCaseEvidences",
+    outputs: [
+      {
+        components: [
+          {
+            internalType: "string",
+            name: "cid",
+            type: "string",
+          },
+          {
+            internalType: "uint256",
+            name: "policyId",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "createdAt",
+            type: "uint256",
+          },
+        ],
+        internalType: "struct CaseRegistry.Evidence[]",
+        name: "claimantEvidences",
+        type: "tuple[]",
+      },
+      {
+        components: [
+          {
+            internalType: "string",
+            name: "cid",
+            type: "string",
+          },
+          {
+            internalType: "uint256",
+            name: "policyId",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "createdAt",
+            type: "uint256",
+          },
+        ],
+        internalType: "struct CaseRegistry.Evidence[]",
+        name: "defendantEvidences",
+        type: "tuple[]",
       },
     ],
     stateMutability: "view",
@@ -290,7 +416,20 @@ const abi = [
   },
   {
     inputs: [],
-    name: "nextId",
+    name: "nextCaseId",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "nextPolicyId",
     outputs: [
       {
         internalType: "uint256",
@@ -305,8 +444,13 @@ const abi = [
     inputs: [
       {
         internalType: "address",
-        name: "provider",
+        name: "defendant",
         type: "address",
+      },
+      {
+        internalType: "string",
+        name: "complaint",
+        type: "string",
       },
       {
         internalType: "uint64",
@@ -314,9 +458,26 @@ const abi = [
         type: "uint64",
       },
       {
-        internalType: "string[]",
+        components: [
+          {
+            internalType: "string",
+            name: "cid",
+            type: "string",
+          },
+          {
+            internalType: "uint256",
+            name: "policyId",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "createdAt",
+            type: "uint256",
+          },
+        ],
+        internalType: "struct CaseRegistry.Evidence[]",
         name: "initialEvidences",
-        type: "string[]",
+        type: "tuple[]",
       },
     ],
     name: "openCase",
@@ -334,7 +495,46 @@ const abi = [
     inputs: [
       {
         internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    name: "policies",
+    outputs: [
+      {
+        internalType: "uint256",
         name: "id",
+        type: "uint256",
+      },
+      {
+        internalType: "string",
+        name: "name",
+        type: "string",
+      },
+      {
+        internalType: "string",
+        name: "description",
+        type: "string",
+      },
+      {
+        internalType: "address",
+        name: "policyOwner",
+        type: "address",
+      },
+      {
+        internalType: "uint256",
+        name: "createdAt",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "caseId",
         type: "uint256",
       },
       {
@@ -357,13 +557,30 @@ const abi = [
     inputs: [
       {
         internalType: "uint256",
-        name: "id",
+        name: "caseId",
         type: "uint256",
       },
       {
-        internalType: "string",
-        name: "cid",
-        type: "string",
+        components: [
+          {
+            internalType: "string",
+            name: "cid",
+            type: "string",
+          },
+          {
+            internalType: "uint256",
+            name: "policyId",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "createdAt",
+            type: "uint256",
+          },
+        ],
+        internalType: "struct CaseRegistry.Evidence",
+        name: "evidence",
+        type: "tuple",
       },
     ],
     name: "submitEvidence",

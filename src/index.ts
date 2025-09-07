@@ -1,15 +1,18 @@
 // index.ts
 import express from "express";
+import cors from "cors";
 import { createClient } from "redis";
 import { createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { readContract } from "viem/actions";
 import { sepolia } from "viem/chains";
 import { ESCROW_JUDGE_ADDRESS } from "./config/addresses.ts";
-import abi from "./config/abi/EscrowJudge.ts";
+import abi from "./config/abi/CaseRegistry.ts";
+import "./declarations.ts";
+import bodyParser from "body-parser";
 
 const app = express();
-const port = process.env.PORT ?? "3000";
+const port = process.env.PORT ?? "3001";
 
 const account = privateKeyToAccount(
   process.env.AI_PRIVATE_KEY! as `0x${string}`
@@ -25,18 +28,15 @@ const redisClient = await createClient()
   .on("error", (err) => console.log("Redis Client Error", err))
   .connect();
 
+app.use(cors());
+app.use(bodyParser.json());
+
 app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
 app.get("/get-party-cases", async (req, res) => {
   const address = req.query.address as string;
-  const cachedCase = await redisClient.get(address.toLowerCase());
-
-  if (cachedCase) {
-    console.log("Serving from cache");
-    return res.json(JSON.parse(cachedCase));
-  }
 
   const caseIds = await readContract(walletClient, {
     address: ESCROW_JUDGE_ADDRESS,
@@ -63,30 +63,39 @@ app.get("/get-party-cases", async (req, res) => {
         args: [id],
       });
 
+      const caseChallengeHistory = await readContract(walletClient, {
+        address: ESCROW_JUDGE_ADDRESS,
+        abi,
+        functionName: "getCaseChallengeHistory",
+        args: [id],
+      });
+      console.log({ caseDetails, caseEvidences });
+
       return {
         id: Number(id),
-        client: caseDetails[0],
-        provider: caseDetails[1],
+        claimant: caseDetails[0],
+        defendant: caseDetails[1],
         token: caseDetails[2],
         amount: Number(caseDetails[3]),
-        evidencesClient: caseEvidences[0],
-        evidencesProvider: caseEvidences[1],
-        justification: caseDetails[4],
-        deadline: Number(caseDetails[5]),
-        proposedAt: Number(caseDetails[6]),
-        status: caseDetails[7],
-        outcome: caseDetails[8],
+        evidencesClaimant: caseEvidences[0],
+        evidencesDefendant: caseEvidences[1],
+        complaint: caseDetails[4],
+        justification: caseDetails[5],
+        challengeHistory: caseChallengeHistory,
+        deadline: Number(caseDetails[6]),
+        proposedAt: Number(caseDetails[7]),
+        status: caseDetails[8],
+        outcome: caseDetails[9],
       };
     })
   );
-
-  await redisClient.set(address.toLowerCase(), JSON.stringify(cases));
 
   return res.json(cases);
 });
 
 app.post("/propose-decision", async (req, res) => {
   const { caseId, outcome, decision } = req.body;
+  console.log("Proposing decision", { caseId, outcome, decision });
   await walletClient.writeContract({
     address: ESCROW_JUDGE_ADDRESS,
     abi,
