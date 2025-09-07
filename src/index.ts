@@ -1,12 +1,12 @@
 // index.ts
 import express from "express";
 import cors from "cors";
-import { createClient } from "redis";
+// import { createClient } from "redis";
 import { createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { readContract } from "viem/actions";
 import { sepolia } from "viem/chains";
-import { ESCROW_JUDGE_ADDRESS } from "./config/addresses.ts";
+import { CASE_REGISTRY } from "./config/addresses.ts";
 import abi from "./config/abi/CaseRegistry.ts";
 import "./declarations.ts";
 import bodyParser from "body-parser";
@@ -42,9 +42,9 @@ const walletClient = createWalletClient({
   account,
 });
 
-const redisClient = await createClient()
+/* const redisClient = await createClient()
   .on("error", (err) => console.log("Redis Client Error", err))
-  .connect();
+  .connect(); */
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -57,7 +57,7 @@ app.get("/get-party-cases", async (req, res) => {
   const address = req.query.address as string;
 
   const caseIds = await readContract(walletClient, {
-    address: ESCROW_JUDGE_ADDRESS,
+    address: CASE_REGISTRY,
     abi,
     functionName: "getPartyCaseIds",
     args: [address as `0x${string}`],
@@ -68,23 +68,30 @@ app.get("/get-party-cases", async (req, res) => {
   const cases = await Promise.all(
     caseIds.map(async (id) => {
       const caseDetails = await readContract(walletClient, {
-        address: ESCROW_JUDGE_ADDRESS,
+        address: CASE_REGISTRY,
         abi,
         functionName: "cases",
         args: [id],
       });
 
       const caseEvidences = await readContract(walletClient, {
-        address: ESCROW_JUDGE_ADDRESS,
+        address: CASE_REGISTRY,
         abi,
         functionName: "getCaseEvidences",
         args: [id],
       });
 
       const caseChallengeHistory = await readContract(walletClient, {
-        address: ESCROW_JUDGE_ADDRESS,
+        address: CASE_REGISTRY,
         abi,
         functionName: "getCaseChallengeHistory",
+        args: [id],
+      });
+
+      const caseJustificationHistory = await readContract(walletClient, {
+        address: CASE_REGISTRY,
+        abi,
+        functionName: "getCaseJustificationHistory",
         args: [id],
       });
       console.log({ caseDetails, caseEvidences });
@@ -98,12 +105,12 @@ app.get("/get-party-cases", async (req, res) => {
         evidencesClaimant: caseEvidences[0],
         evidencesDefendant: caseEvidences[1],
         complaint: caseDetails[4],
-        justification: caseDetails[5],
+        justificationHistory: caseJustificationHistory,
         challengeHistory: caseChallengeHistory,
-        deadline: Number(caseDetails[6]),
-        proposedAt: Number(caseDetails[7]),
-        status: caseDetails[8],
-        outcome: caseDetails[9],
+        deadline: Number(caseDetails[5]),
+        proposedAt: Number(caseDetails[6]),
+        status: caseDetails[7],
+        outcome: caseDetails[8],
       };
     })
   );
@@ -118,14 +125,15 @@ app.post("/propose-decision", async (req, res) => {
   if (outcomeIndex === -1) {
     return res.status(400).json({ error: "Invalid outcome" });
   }
-  await walletClient.writeContract({
-    address: ESCROW_JUDGE_ADDRESS,
+  const hash = await walletClient.writeContract({
+    address: CASE_REGISTRY,
     abi,
     functionName: "proposeDecision",
     args: [BigInt(caseId), outcomeIndex, decision],
   });
+  console.log("Decision proposed with tx hash:", hash);
 
-  return res.status(200).json({ success: true });
+  return res.status(200).json({ success: true, hash });
 });
 
 app.listen(port, () => {

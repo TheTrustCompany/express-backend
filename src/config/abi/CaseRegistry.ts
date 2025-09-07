@@ -200,11 +200,6 @@ const abi = [
         type: "string",
       },
       {
-        internalType: "string",
-        name: "justification",
-        type: "string",
-      },
-      {
         internalType: "uint64",
         name: "deadline",
         type: "uint64",
@@ -398,6 +393,25 @@ const abi = [
   {
     inputs: [
       {
+        internalType: "uint256",
+        name: "id",
+        type: "uint256",
+      },
+    ],
+    name: "getCaseJustificationHistory",
+    outputs: [
+      {
+        internalType: "string[]",
+        name: "",
+        type: "string[]",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
         internalType: "address",
         name: "party",
         type: "address",
@@ -484,7 +498,7 @@ const abi = [
     outputs: [
       {
         internalType: "uint256",
-        name: "id",
+        name: "",
         type: "uint256",
       },
     ],
