@@ -11,6 +11,24 @@ import abi from "./config/abi/CaseRegistry.ts";
 import "./declarations.ts";
 import bodyParser from "body-parser";
 
+enum CaseOutcome {
+  NONE = "none",
+  APPROVE_OPPOSER = "approve_opposer",
+  REJECT_OPPOSER = "reject_opposer",
+  CLEARIFY = "clearify",
+  REQUEST_OPPOSER_EVIDENCE = "request_opposer_evidence",
+  REQUEST_DEFENDER_EVIDENCE = "request_defender_evidence",
+}
+
+const CASE_OUTCOMES = [
+  CaseOutcome.NONE,
+  CaseOutcome.APPROVE_OPPOSER,
+  CaseOutcome.REJECT_OPPOSER,
+  CaseOutcome.CLEARIFY,
+  CaseOutcome.REQUEST_OPPOSER_EVIDENCE,
+  CaseOutcome.REQUEST_DEFENDER_EVIDENCE,
+];
+
 const app = express();
 const port = process.env.PORT ?? "3001";
 
@@ -96,11 +114,15 @@ app.get("/get-party-cases", async (req, res) => {
 app.post("/propose-decision", async (req, res) => {
   const { caseId, outcome, decision } = req.body;
   console.log("Proposing decision", { caseId, outcome, decision });
+  const outcomeIndex = CASE_OUTCOMES.indexOf(outcome);
+  if (outcomeIndex === -1) {
+    return res.status(400).json({ error: "Invalid outcome" });
+  }
   await walletClient.writeContract({
     address: ESCROW_JUDGE_ADDRESS,
     abi,
     functionName: "proposeDecision",
-    args: [BigInt(caseId), outcome, decision],
+    args: [BigInt(caseId), outcomeIndex, decision],
   });
 
   return res.status(200).json({ success: true });
